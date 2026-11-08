@@ -1,9 +1,9 @@
 #include <iostream>
-#include <vulkan/vulkan.h>
-
+//#include <vulkan/vulkan.h>
 int main(void)
 {
-	VkApplicationInfo appInfo = {};
+	/*
+	 VkApplicationInfo appInfo = {};
 	appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
 	//TODO Cambiar a un json o alguna especie de datafile para tenmer un acceso rapido y hacer cambios
 	appInfo.pApplicationName = "MyCraft";
@@ -16,7 +16,7 @@ int main(void)
 	VkInstance instance;
 
 	VkResult result = vkCreateInstance(&instanceInfo, 0, &instance);
-
+	
 	if(result == VK_SUCCESS && false)
 	{
 		printf("succesfully crated vulkan instance\n");
@@ -24,7 +24,7 @@ int main(void)
 	else
 	{
 		perror("failed to create vulkan instance\n");
-	}
+	}*/
 	
 	return 0;
 }
