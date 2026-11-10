@@ -10,7 +10,7 @@
 #define VK_CHECK(result)                                     \
 	if (result != VK_SUCCESS)                                \
 	{                                                        \
-		std::cout << "Vulkan Error:" << result << std::endl; \
+		std::cout << "Vulkan Error: " << result << std::endl; \
 		__debugbreak();                                      \
 		return false;                                        \
 	}
@@ -30,11 +30,21 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL vk_debug_callback(
 struct VkContext
 {
 	VkInstance instance;
+	VkDebugUtilsMessengerEXT debugMessenger;
 	VkSurfaceKHR surface;
+	VkSurfaceFormatKHR surfaceFormat;
 	VkPhysicalDevice gpu;
 	VkDevice device;
+	VkQueue graphicsQueue;
 	VkSwapchainKHR swapchain;
-	VkDebugUtilsMessengerEXT debugMessenger;
+	VkCommandPool commandPool;
+
+	VkSemaphore aquireSemaphore;
+	VkSemaphore submitSemaphore;
+
+	uint32_t scImgCount;
+	// TODO: Suballocation from Main Memory
+	VkImage scImages[5];
 
 	int graphicsIdx;
 };
@@ -86,16 +96,23 @@ bool vk_init(VkContext *vkcontext, void *window)
 		return false;
 	}
 
+	{
+		//Comprobando que me esta dando la ventana que he creado
+		HWND hwnd = (HWND)window;
+
+		printf("[VULKAN] HWND: %p\n", hwnd);
+		printf("[VULKAN] IsWindow: %d\n", IsWindow(hwnd));
+	}
+
 	// Create Surface
 	{
-#ifdef WINDOWS_BUILD
+
 	VkWin32SurfaceCreateInfoKHR surfaceInfo = {};
 	surfaceInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
 	surfaceInfo.hwnd = (HWND)window;
 	surfaceInfo.hinstance = GetModuleHandleA(0);
 	VK_CHECK(vkCreateWin32SurfaceKHR(vkcontext->instance, &surfaceInfo, 0, &vkcontext->surface));
-#elif LINUX_BUILD
-#endif
+
 	}
 
 	// Choose GPU
@@ -162,17 +179,125 @@ bool vk_init(VkContext *vkcontext, void *window)
 		deviceInfo.enabledExtensionCount = ArraySize(extensions);
 
 		VK_CHECK(vkCreateDevice(vkcontext->gpu, &deviceInfo, 0, &vkcontext->device));
+
+		vkGetDeviceQueue(vkcontext->device, vkcontext->graphicsIdx, 0, &vkcontext->graphicsQueue);
 	}
 
 	//Swapchain
 	{
+		uint32_t formatCount = 0;
+		// TODO: Subalocation from Main Memory
+		VkSurfaceFormatKHR surfaceFormats[10];
+		VK_CHECK(vkGetPhysicalDeviceSurfaceFormatsKHR(vkcontext->gpu, vkcontext->surface, &formatCount, 0));
+		VK_CHECK(vkGetPhysicalDeviceSurfaceFormatsKHR(vkcontext->gpu, vkcontext->surface, &formatCount, surfaceFormats));
+
+		for (uint32_t i = 0; i < formatCount; i++)
+		{
+			VkSurfaceFormatKHR format = surfaceFormats[i];
+
+			if(format.format == VK_FORMAT_B8G8R8A8_SRGB)
+			{
+				vkcontext->surfaceFormat = format;
+				break;
+			}
+		}
+		
+
+		VkSurfaceCapabilitiesKHR surfaceCaps = {};
+		VK_CHECK(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(vkcontext->gpu, vkcontext->surface, &surfaceCaps));
+		uint32_t imgCount = surfaceCaps.minImageCount +1;
+		imgCount = imgCount > surfaceCaps.maxImageCount? imgCount-1:imgCount;
+
 		VkSwapchainCreateInfoKHR scInfo = {};
 		scInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
 		scInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+		// TODO: Si quieremos que los componentes tengan transpariencia, hay que cambiar esto
+		scInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
 		scInfo.surface = vkcontext->surface;
+		scInfo.imageFormat = vkcontext->surfaceFormat.format;
+		scInfo.preTransform = surfaceCaps.currentTransform;
+		scInfo.imageExtent = surfaceCaps.currentExtent;
+		scInfo.minImageCount = imgCount;
+		scInfo.imageArrayLayers = 1;
 
 		VK_CHECK(vkCreateSwapchainKHR(vkcontext->device, &scInfo, 0, &vkcontext->swapchain));
+
+		VK_CHECK(vkGetSwapchainImagesKHR(vkcontext->device, vkcontext->swapchain, &vkcontext->scImgCount, 0));
+		VK_CHECK(vkGetSwapchainImagesKHR(vkcontext->device, vkcontext->swapchain, &vkcontext->scImgCount, vkcontext->scImages));
+	}
+
+	// Command Pool
+	{
+		VkCommandPoolCreateInfo poolInfo = {};
+		poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+		poolInfo.queueFamilyIndex = vkcontext->graphicsIdx;
+		VK_CHECK(vkCreateCommandPool(vkcontext->device, &poolInfo, 0, &vkcontext->commandPool));
+	}
+
+	// Sync Objects
+	{
+		VkSemaphoreCreateInfo semaInfo = {};
+		semaInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+		VK_CHECK(vkCreateSemaphore(vkcontext->device, &semaInfo, 0, &vkcontext->aquireSemaphore));
+		VK_CHECK(vkCreateSemaphore(vkcontext->device, &semaInfo, 0, &vkcontext->submitSemaphore));
 	}
 
 	return true;
+}
+
+bool vk_render(VkContext *vkcontext)
+{
+	uint32_t imgIdx;
+	VK_CHECK(vkAcquireNextImageKHR(vkcontext->device, vkcontext->swapchain, 0, vkcontext->aquireSemaphore, 0, &imgIdx));
+
+	VkCommandBuffer cmd;
+	VkCommandBufferAllocateInfo allocInfo = {};
+	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+	allocInfo.commandBufferCount = 1;
+	allocInfo.commandPool = vkcontext->commandPool;
+	vkAllocateCommandBuffers(vkcontext->device, &allocInfo, &cmd);
+	
+	VkCommandBufferBeginInfo beginInfo = {};
+	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+	VK_CHECK(vkBeginCommandBuffer(cmd, &beginInfo));
+	// Rendering Commands
+	{
+		VkClearColorValue color = {1, 1, 0, 1};
+		VkImageSubresourceRange range = {};
+		range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		range.layerCount = 1;
+		range.levelCount = 1;
+
+		vkCmdClearColorImage(cmd, vkcontext->scImages[imgIdx], VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, &color, 1, &range);
+	}
+
+	VK_CHECK(vkEndCommandBuffer(cmd));
+
+	VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+
+	VkSubmitInfo submitInfo = {};
+	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	submitInfo.pWaitDstStageMask = &waitStage;
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers = &cmd;
+	submitInfo.pSignalSemaphores = &vkcontext->submitSemaphore;
+	submitInfo.signalSemaphoreCount = 1;
+	submitInfo.pWaitSemaphores = &vkcontext->aquireSemaphore;
+	submitInfo.waitSemaphoreCount = 1;
+	VK_CHECK(vkQueueSubmit(vkcontext->graphicsQueue, 1, &submitInfo, 0));
+
+	VkPresentInfoKHR presentInfo;
+	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+	presentInfo.pSwapchains = &vkcontext->swapchain;
+	presentInfo.swapchainCount = 1;
+	presentInfo.pImageIndices = &imgIdx;
+	presentInfo.pWaitSemaphores = &vkcontext->submitSemaphore;
+	presentInfo.waitSemaphoreCount = 1;
+	VK_CHECK(vkQueuePresentKHR(vkcontext->graphicsQueue, &presentInfo));
+
+	VK_CHECK(vkDeviceWaitIdle(vkcontext->device));
+
+	vkFreeCommandBuffers(vkcontext->device, vkcontext->commandPool, 1, &cmd);
+
 }

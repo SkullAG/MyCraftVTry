@@ -45,7 +45,11 @@ bool platform_create_window(HWND *window)
         WS_THICKFRAME | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_OVERLAPPED,
         100, 100, 1600, 720, 0 ,0, instance, 0);
 
-    if(window == 0){
+    // Comprobando el numero de la ventana que tengo para compararla con el render del vulkan
+    printf("[WINDOW] HWND: %p\n", *window);
+    printf("[WINDOW] IsWindow: %d\n", IsWindow(*window));
+
+    if(*window == NULL || !IsWindow(*window)){
         MessageBoxA(*window, "Failed creating vindow", "Error", MB_ICONEXCLAMATION | MB_OK);
         return false;
     }
@@ -78,8 +82,7 @@ int main()
     {
         return -1;
     }
-     printf("Funciono");
-    if(!vk_init(&vkcontext, &window))
+    if(!vk_init(&vkcontext, (void*)window))
     {
         return -1;
     }
@@ -87,6 +90,7 @@ int main()
     while(running)
     {
         platform_update_window(window);
+        vk_render(&vkcontext);
        
     }
 
