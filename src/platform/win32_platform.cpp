@@ -1,8 +1,12 @@
 #include <windows.h>
 
+#include "defines.h"
+#include "platform.h"
+
 #include <renderer/vk_renderer.cpp>
 
-static bool running = true;
+global_variable bool running = true;
+global_variable HWND window;
 
 LRESULT CALLBACK platform_window_callback(HWND window, UINT msg, WPARAM wParam, LPARAM lParam)
 {
@@ -20,7 +24,7 @@ LRESULT CALLBACK platform_window_callback(HWND window, UINT msg, WPARAM wParam, 
 
 }
 
-bool platform_create_window(HWND *window)
+bool platform_create_window()
 {
     HINSTANCE instance = GetModuleHandleA(0);
 
@@ -33,12 +37,12 @@ bool platform_create_window(HWND *window)
 
     if(!RegisterClassA(&wc))
     {
-        MessageBoxA(*window, "Failed registering window class",  "Error", MB_ICONEXCLAMATION | MB_OK);
+        MessageBoxA(window, "Failed registering window class",  "Error", MB_ICONEXCLAMATION | MB_OK);
         return false;
     }
     // Aqui es donde se crea la ventana
     // Recomiendo mirar la guia de window para implementar mas cosas a la ventana
-    *window = CreateWindowExA(
+    window = CreateWindowExA(
         WS_EX_APPWINDOW,
         "SKOVoxels",
         "MyCraft",
@@ -46,15 +50,15 @@ bool platform_create_window(HWND *window)
         100, 100, 1600, 720, 0 ,0, instance, 0);
 
     // Comprobando el numero de la ventana que tengo para compararla con el render del vulkan
-    printf("[WINDOW] HWND: %p\n", *window);
-    printf("[WINDOW] IsWindow: %d\n", IsWindow(*window));
+    printf("[WINDOW] HWND: %p\n", window);
+    printf("[WINDOW] IsWindow: %d\n", IsWindow(window));
 
-    if(*window == NULL || !IsWindow(*window)){
-        MessageBoxA(*window, "Failed creating vindow", "Error", MB_ICONEXCLAMATION | MB_OK);
+    if(window == NULL || !IsWindow(window)){
+        MessageBoxA(window, "Failed creating vindow", "Error", MB_ICONEXCLAMATION | MB_OK);
         return false;
     }
     // Para hacer que aparezca, es bastante parecido al de OPENGL
-    ShowWindow(*window, SW_SHOW);
+    ShowWindow(window, SW_SHOW);
 
     return true;
 
@@ -76,9 +80,9 @@ void platform_update_window(HWND window)
 int main()
 {
     VkContext vkcontext = {};
-    HWND window = 0;
+
     // En caso de que falle que no inicialice y se cierre
-    if(!platform_create_window(&window))
+    if(!platform_create_window())
     {
         return -1;
     }
@@ -90,9 +94,21 @@ int main()
     while(running)
     {
         platform_update_window(window);
-        vk_render(&vkcontext);
+        if(!vk_render(&vkcontext))
+        {
+            return -1;
+        }
        
     }
 
     return 0;
+}
+
+void platform_get_window_size(uint32_t *width, uint32_t *height)
+{   
+    RECT rect;
+    GetClientRect(window, &rect);
+
+    *width = rect.right - rect.left;
+    *height = rect.bottom - rect.top;
 }
