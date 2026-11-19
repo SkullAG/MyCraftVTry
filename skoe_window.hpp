@@ -15,7 +15,13 @@ namespace skoe
         SkoeWindow(int w, int h, std::string name);
         ~SkoeWindow();
 
+        SkoeWindow(const SkoeWindow &) = delete;
+        SkoeWindow &operator=(const SkoeWindow &) = delete;
+
         bool shouldClose() {return glfwWindowShouldClose(window);}
+        VkExtent2D getExtent() {return {static_cast<uint32_t>(width), static_cast<uint32_t>(height)}; }
+
+        void createWindowSurface(VkInstance instance, VkSurfaceKHR* surface);
 
     private:
         void initWindow();
