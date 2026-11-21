@@ -7,6 +7,7 @@ namespace skoe {
 
     FirstApp::FirstApp()
     {
+        loadModels();
         createPipelineLayout();
         createPipeline();
         createCommandBuffers();
@@ -17,7 +18,8 @@ namespace skoe {
         vkDestroyPipelineLayout(skoeDevice.device(), pipelineLayout, nullptr);
     }
 
-    void FirstApp::run(){
+    void FirstApp::run()
+    {
         while(!skoeWindow.shouldClose())
         {
             glfwPollEvents();
@@ -25,6 +27,18 @@ namespace skoe {
         }
 
         vkDeviceWaitIdle(skoeDevice.device());
+    }
+
+    void FirstApp::loadModels()
+    {
+        std::vector<SkoeModel::Vertex> vertices 
+        {
+            {{0.0f, -0.5}, {1.0f, 0.0f, 0.0f}},
+            {{0.5f, 0.5}, {0.0f, 1.0f, 0.0f}},
+            {{-0.5f, 0.5}, {0.0f, 0.0f, 1.0f}}
+        };
+
+        skoeModel = std::make_unique<SkoeModel>(skoeDevice, vertices);
     }
 
     void FirstApp::createPipelineLayout()
@@ -44,7 +58,8 @@ namespace skoe {
 
     void FirstApp::createPipeline()
     {
-        PipelineConfigInfo pipelineConfig = SkoePipeline::defaultPipelineConfigInfo(skoeSwapChain.width(), skoeSwapChain.height());
+        PipelineConfigInfo pipelineConfig = {};
+        SkoePipeline::defaultPipelineConfigInfo(pipelineConfig, skoeSwapChain.width(), skoeSwapChain.height());
         pipelineConfig.renderPass = skoeSwapChain.getRenderPass();
         pipelineConfig.pipelineLayout = pipelineLayout;
         skoePipeline = std::make_unique<SkoePipeline>(
@@ -94,7 +109,8 @@ namespace skoe {
             vkCmdBeginRenderPass(commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
             skoePipeline->bind(commandBuffers[i]);
-            vkCmdDraw(commandBuffers[i], 3, 1, 0, 0);
+            skoeModel->bind(commandBuffers[i]);
+            skoeModel->draw(commandBuffers[i]);
 
             vkCmdEndRenderPass(commandBuffers[i]);
             if(vkEndCommandBuffer(commandBuffers[i]) != VK_SUCCESS) {throw std::runtime_error("Failed to record command buffer ");}

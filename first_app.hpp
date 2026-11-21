@@ -4,9 +4,11 @@
 #include "skoe_pipeline.hpp" 
 #include "skoe_device.hpp"
 #include "skoe_swap_chain.hpp"
+#include "skoe_model.hpp"
 
 #include <memory>
 #include <vector>
+#include <glm/glm/glm.hpp>
 
 namespace skoe
 {
@@ -25,6 +27,7 @@ namespace skoe
             void run();
             
         private:
+            void loadModels();
             void createPipelineLayout();
             void createPipeline();
             void createCommandBuffers();
@@ -36,5 +39,6 @@ namespace skoe
             std::unique_ptr<SkoePipeline> skoePipeline;
             VkPipelineLayout pipelineLayout;
             std::vector<VkCommandBuffer> commandBuffers;
+            std::unique_ptr<SkoeModel> skoeModel;
     };
 }
