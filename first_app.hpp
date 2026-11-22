@@ -31,11 +31,14 @@ namespace skoe
             void createPipelineLayout();
             void createPipeline();
             void createCommandBuffers();
+            void freeCommandBuffers();
             void drawFrame();
+            void recreateSwapChain();
+            void recordCommandBuffer(int imageIndex);
 
             SkoeWindow skoeWindow{WIDTH, HEIGHT, "Hello world"};
             SkoeDevice skoeDevice{skoeWindow};
-            SkoeSwapChain skoeSwapChain{skoeDevice, skoeWindow.getExtent()};
+            std::unique_ptr<SkoeSwapChain>skoeSwapChain;
             std::unique_ptr<SkoePipeline> skoePipeline;
             VkPipelineLayout pipelineLayout;
             std::vector<VkCommandBuffer> commandBuffers;

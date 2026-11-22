@@ -35,7 +35,7 @@ class SkoeDevice {
 
   // Not copyable or movable
   SkoeDevice(const SkoeDevice &) = delete;
-  void operator=(const SkoeDevice &) = delete;
+  SkoeDevice& operator=(const SkoeDevice &) = delete;
   SkoeDevice(SkoeDevice &&) = delete;
   SkoeDevice &operator=(SkoeDevice &&) = delete;
 
