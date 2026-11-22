@@ -2,9 +2,9 @@
 
 call "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat"
 
-Set includes=/Isrc /I%VULKAN_SDK%/Include
-Set links=/link /LIBPATH:%VULKAN_SDK%/Lib vulkan-1.lib user32.lib
-Set defines=/D DEBUG /D WINDOWS_BUILD
+Set includes=/Isrc /I%VULKAN_SDK%/Include  /I%GLFW_SDK%/include
+Set links=/link /LIBPATH:%VULKAN_SDK%/Lib /LIBPATH:%GLFW_SDK%/lib-vc2026 vulkan-1.lib glfw3_mt.lib user32.lib gdi32.lib shell32.lib
+Set defines=/D DEBUG
 
 echo "Compiling Shaders..."
 for /r %%i in ("assets\shaders\*") do (
@@ -15,5 +15,5 @@ for /r %%i in ("assets\shaders\*") do (
 ) 
 
 echo "Building main..."
-cl /EHsc /Z7 /Fe"main" %includes% %defines% src/platform/win32_platform.cpp %links%
+cl /EHsc /Z7 /Fobuild\ /Febuild\main.exe %includes% %defines% *.cpp  %links% 
 REM cl /EHsc %includes% %defines% src/main.cpp %links%
