@@ -4,7 +4,7 @@
 #include "skoe_pipeline.hpp" 
 #include "skoe_device.hpp"
 #include "skoe_swap_chain.hpp"
-#include "skoe_model.hpp"
+#include "skoe_game_object.hpp"
 
 #include <memory>
 #include <vector>
@@ -27,7 +27,7 @@ namespace skoe
             void run();
             
         private:
-            void loadModels();
+            void loadGameObjects();
             void createPipelineLayout();
             void createPipeline();
             void createCommandBuffers();
@@ -35,6 +35,7 @@ namespace skoe
             void drawFrame();
             void recreateSwapChain();
             void recordCommandBuffer(int imageIndex);
+            void renderGameObjects(VkCommandBuffer commandBuffer);
 
             SkoeWindow skoeWindow{WIDTH, HEIGHT, "Hello world"};
             SkoeDevice skoeDevice{skoeWindow};
@@ -42,6 +43,6 @@ namespace skoe
             std::unique_ptr<SkoePipeline> skoePipeline;
             VkPipelineLayout pipelineLayout;
             std::vector<VkCommandBuffer> commandBuffers;
-            std::unique_ptr<SkoeModel> skoeModel;
+            std::vector<SkoeGameObject> gameObjects;
     };
 }
