@@ -1,14 +1,12 @@
 #pragma once
 
 #include "skoe_window.hpp"
-#include "skoe_pipeline.hpp" 
 #include "skoe_device.hpp"
-#include "skoe_swap_chain.hpp"
+#include "skoe_renderer.hpp"
 #include "skoe_game_object.hpp"
 
 #include <memory>
 #include <vector>
-#include <glm/glm/glm.hpp>
 
 namespace skoe
 {
@@ -28,21 +26,11 @@ namespace skoe
             
         private:
             void loadGameObjects();
-            void createPipelineLayout();
-            void createPipeline();
-            void createCommandBuffers();
-            void freeCommandBuffers();
-            void drawFrame();
-            void recreateSwapChain();
-            void recordCommandBuffer(int imageIndex);
-            void renderGameObjects(VkCommandBuffer commandBuffer);
 
-            SkoeWindow skoeWindow{WIDTH, HEIGHT, "Hello world"};
+            SkoeWindow skoeWindow{WIDTH, HEIGHT, "Good morning World"};
             SkoeDevice skoeDevice{skoeWindow};
-            std::unique_ptr<SkoeSwapChain>skoeSwapChain;
-            std::unique_ptr<SkoePipeline> skoePipeline;
-            VkPipelineLayout pipelineLayout;
-            std::vector<VkCommandBuffer> commandBuffers;
+            SkoeRenderer skoeRenderer{skoeWindow, skoeDevice};
+            
             std::vector<SkoeGameObject> gameObjects;
     };
 }
