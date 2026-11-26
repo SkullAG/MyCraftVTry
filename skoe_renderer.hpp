@@ -23,7 +23,8 @@ namespace skoe
             SkoeRenderer &operator=(const SkoeRenderer &) = delete;
 
             VkRenderPass getSwapChainRenderPass() const {return skoeSwapChain->getRenderPass();}
-
+            
+            float getAspectRatio() const {return skoeSwapChain->extentAspectRatio();}
             bool isFrameInProgress() const { return isFrameStarted; }
 
             VkCommandBuffer getCurrentCommandBuffer() const

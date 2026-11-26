@@ -1,5 +1,6 @@
 #pragma once
 
+#include "skoe_camera.hpp"
 #include "skoe_pipeline.hpp" 
 #include "skoe_device.hpp"
 #include "skoe_game_object.hpp"
@@ -19,7 +20,10 @@ namespace skoe
             SimpleRenderSystem(const SimpleRenderSystem &) = delete;
             SimpleRenderSystem &operator=(const SimpleRenderSystem &) = delete;
 
-            void renderGameObjects(VkCommandBuffer commandBuffer, std::vector<SkoeGameObject> &gameObjects);
+            void renderGameObjects(
+                VkCommandBuffer commandBuffer, 
+                std::vector<SkoeGameObject> &gameObjects, 
+                const SkoeCamera &camera);
             
         private:
             void createPipelineLayout();
