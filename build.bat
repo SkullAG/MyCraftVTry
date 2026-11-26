@@ -15,5 +15,5 @@ for /r %%i in ("assets\shaders\*") do (
 ) 
 
 echo "Building main..."
-cl /EHsc /Z7 /Fobuild\ /Febuild\main.exe %includes% %defines% *.cpp  %links% 
+cl /std:c++17 /EHsc /Z7 /Fobuild\ /Febuild\main.exe %includes% %defines% *.cpp  %links% 
 REM cl /EHsc %includes% %defines% src/main.cpp %links%

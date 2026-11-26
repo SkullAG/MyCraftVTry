@@ -121,13 +121,14 @@ namespace skoe {
 
     void FirstApp::loadGameObjects()
     {
-        std::shared_ptr<SkoeModel> skoeModel = createCubeModel(skoeDevice, {0.0f, 0.0f, 0.0f});
+        //std::shared_ptr<SkoeModel> skoeModel = createCubeModel(skoeDevice, {0.0f, 0.0f, 0.0f});
+        std::shared_ptr<SkoeModel> skoeModel = SkoeModel::createModelFromFile(skoeDevice, "models/smooth_vase.obj");
         
-        auto cube = SkoeGameObject::createGameObject();
-        cube.model = skoeModel;
-        cube.transform.translation = {0.0f, 0.0f, 0.5f};
-        cube.transform.scale = {0.5f, 0.5f , 0.5f};
-        gameObjects.push_back(std::move(cube));
+        auto gameObject = SkoeGameObject::createGameObject();
+        gameObject.model = skoeModel;
+        gameObject.transform.translation = {0.0f, 0.0f, 0.5f};
+        gameObject.transform.scale = glm::vec3(3.f);//{0.5f, 0.5f , 0.5f};
+        gameObjects.push_back(std::move(gameObject));
     }
 
 }
